@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+    <meta name = "viewport" content = "width = device-width, initial-scale = 1">
+    <title>PING PONG LESS</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            color: #fff;
+            font: 20px monospace;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        canvas {
+            width: min(95vw, 350px);
+            height: auto;
+            border: 1px solid #fff;
+        }
+    </style>
+    <canvas id = "g" width = "350" height = "600"></canvas>
+    <script>
+        let c = document.querySelector('#g'), x = c.getContext('2d');
+        let bx = 175, by = 300, dx = 2, dy = 2;
+        let speed = 2.8, maxSpeed = 5;
+        let p = 145, q = 145, s1= 0, s2 = 0;
+        function draw(){
+            x.fillStyle = '#080d12';
+            x.fillRect(0,0,350,600);
+            x.fillStyle = '#167d65';
+            x.fillRect(12,12,326,576);
+            x.strokeStyle = '#fff';
+            x.lineWidth = 2;
+            x.strokeRect(12, 12, 326, 576);
+            x.beginPath();
+            x.moveTo(12, 300);
+            x.lineTo(338, 300);
+            x.stroke();
+            x.fillStyle = '#111';
+            x.fillRect(12, 292, 326, 16);
+            x.fillStyle = '#eee';
+            x.fillRect(12, 290, 326, 2);
+            x.fillRect(12, 308, 326, 2);
+            x.fillStyle = '#ffb347';
+            x.fillRect(p, 550, 70, 10);
+            x.fillStyle = '#00ffff';
+            x.fillRect(q, 40, 70, 10);
+            x.fillStyle = '#fff';
+            x.beginPath();
+            x.arc(bx, by, 6, 0, Math.PI * 2);
+            x.fill();
+        }
+        c.addEventListener('pointermove', e => {
+            let r = c.getBoundingClientRect();
+            p = Math.max(12, Math.min(268,(e.clientX-r.left) * 350/r.width - 35));
+        });
+        function update(){
+            bx += dx;
+            by += dy;
+            if(bx < 18 || bx > 332) dx = -dx;
+            q += (bx-35-q) * 0.06;
+            q = Math.max(12, Math.min(268,q));
+            if(by <= 50){
+                if(bx >= q-6 && bx <= q + 76){
+                    dy = Math.abs(dy);
+                }else{
+                    s1++;
+                    resetBall();
+                }
+            }
+            if(by >= 550){
+                if(bx >= p - 6 && bx<= p + 76){
+                    dy = -Math.abs(dy);
+                }else {
+                    s2++;
+                    resetBall();
+                }
+            }
+            draw();
+            x.fillStyle = '#fff';
+            x.textAlign = 'Center';
+            x.font = '20px monospace';
+            x.fillText(s1 + ':' + s2, 175, 320);
+            requestAnimationFrame(update);
+        }
+        function resetBall(){
+            bx = 175;
+            by = 300;
+            dx = Math.random() < 0.5?3:-3;
+            dy = Math.random() < 0.5?2:-2;
+        }
+        update();
+    </script>
+</html>
