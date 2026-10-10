@@ -1,94 +1,215 @@
+
 <!DOCTYPE html>
 <html>
-    <meta name = "viewport" content = "width = device-width, initial-scale = 1">
-    <title>PING PONG LESS</title>
-    <style>
-        body {
-            margin: 0;
-            background: #000;
-            color: #fff;
-            font: 20px monospace;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-        }
-        canvas {
-            width: min(95vw, 350px);
-            height: auto;
-            border: 1px solid #fff;
-        }
-    </style>
-    <canvas id = "g" width = "350" height = "600"></canvas>
-    <script>
-        let c = document.querySelector('#g'), x = c.getContext('2d');
-        let bx = 175, by = 300, dx = 2, dy = 2;
-        let speed = 2.8, maxSpeed = 5;
-        let p = 145, q = 145, s1= 0, s2 = 0;
-        function draw(){
-            x.fillStyle = '#080d12';
-            x.fillRect(0,0,350,600);
-            x.fillStyle = '#167d65';
-            x.fillRect(12,12,326,576);
-            x.strokeStyle = '#fff';
-            x.lineWidth = 2;
-            x.strokeRect(12, 12, 326, 576);
-            x.beginPath();
-            x.moveTo(12, 300);
-            x.lineTo(338, 300);
-            x.stroke();
-            x.fillStyle = '#111';
-            x.fillRect(12, 292, 326, 16);
-            x.fillStyle = '#eee';
-            x.fillRect(12, 290, 326, 2);
-            x.fillRect(12, 308, 326, 2);
-            x.fillStyle = '#ffb347';
-            x.fillRect(p, 550, 70, 10);
-            x.fillStyle = '#00ffff';
-            x.fillRect(q, 40, 70, 10);
-            x.fillStyle = '#fff';
-            x.beginPath();
-            x.arc(bx, by, 6, 0, Math.PI * 2);
-            x.fill();
-        }
-        c.addEventListener('pointermove', e => {
-            let r = c.getBoundingClientRect();
-            p = Math.max(12, Math.min(268,(e.clientX-r.left) * 350/r.width - 35));
-        });
-        function update(){
-            bx += dx;
-            by += dy;
-            if(bx < 18 || bx > 332) dx = -dx;
-            q += (bx-35-q) * 0.06;
-            q = Math.max(12, Math.min(268,q));
-            if(by <= 50){
-                if(bx >= q-6 && bx <= q + 76){
-                    dy = Math.abs(dy);
-                }else{
-                    s1++;
-                    resetBall();
-                }
-            }
-            if(by >= 550){
-                if(bx >= p - 6 && bx<= p + 76){
-                    dy = -Math.abs(dy);
-                }else {
-                    s2++;
-                    resetBall();
-                }
-            }
-            draw();
-            x.fillStyle = '#fff';
-            x.textAlign = 'Center';
-            x.font = '20px monospace';
-            x.fillText(s1 + ':' + s2, 175, 320);
-            requestAnimationFrame(update);
-        }
-        function resetBall(){
-            bx = 175;
-            by = 300;
-            dx = Math.random() < 0.5?3:-3;
-            dy = Math.random() < 0.5?2:-2;
-        }
-        update();
-    </script>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ping Pong Less</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#050709;color:#fff;font:14px monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:12px}
+h1{font-size:18px;letter-spacing:4px;margin:0}
+canvas{width:min(94vw,350px,58vh);height:auto;border:1px solid #66747b;touch-action:none}
+p{margin:0;color:#aab7bd;text-align:center;font-size:12px}
+</style>
+</head>
+<body>
+<h1>PING PONG LESS</h1>
+<canvas id="g" width="350" height="600"></canvas>
+<p>A / D or ← / → to move · SPACE to serve</p>
+<script>
+const c=document.querySelector('#g'),x=c.getContext('2d');
+const W=350,H=600,L=24,R=326,T=28,B=572,N=300,PW=62,PH=10;
+let p=144,q=144,keys={};
+let bx=175,by=500,z=0,vx=0,vy=0,vz=0;
+let phase='ready',message='PRESS SPACE TO SERVE';
+let score=0,aiScore=0,serveBy='player',lastHitter='player';
+let rally=0,aiTarget=144,aiDelay=0;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+addEventListener('keydown',e=>{
+ if(['ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();
+ keys[e.key.toLowerCase()]=true;
+ if(e.code==='Space'&&phase!=='playing')serve();
+});
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+
+function serve(){
+ bx=p+PW/2;
+ by=serveBy==='player'?B-65:T+65;
+ z=0;
+ vx=(Math.random()-.5)*1.1;
+ vy=serveBy==='player'?-2.5:2.5;
+ vz=3.5;
+ phase='playing';
+ message='';
+ lastHitter=serveBy;
+ rally=0;
+ aiDelay=0;
+}
+
+function point(winner){
+ if(phase!=='playing')return;
+ if(winner==='player')score++;
+ else aiScore++;
+ serveBy=winner;
+ phase='point';
+ message=winner==='player'?'YOUR POINT':'AI POINT';
+}
+
+function hitPaddle(who){
+ const center=who==='player'?p+PW/2:q+PW/2;
+ const offset=clamp((bx-center)/(PW/2),-1,1);
+ const direction=who==='player'?-1:1;
+ const speed=Math.min(3.25,Math.hypot(vx,vy)+0.04);
+ vx=offset*speed*0.72;
+ vy=direction*Math.sqrt(Math.max(.8,speed*speed-vx*vx));
+ vz=3.0;
+ z=1;
+ lastHitter=who;
+ rally++;
+ aiDelay=0;
+}
+
+function update(){
+ if(keys.a||keys.arrowleft)p-=3.4;
+ if(keys.d||keys.arrowright)p+=3.4;
+ p=clamp(p,L,R-PW);
+
+ if(phase==='playing'){
+  if(lastHitter==='player'&&by<N){
+   aiTarget=clamp(bx-PW/2+Math.sin(Date.now()/500)*18,L,R-PW);
+  }
+  if(lastHitter==='ai'&&by>N){
+   aiTarget=clamp(bx-PW/2+Math.sin(Date.now()/600)*20,L,R-PW);
+  }
+  const desired=lastHitter==='player'&&by<N?aiTarget:q;
+  if(lastHitter==='player'&&by<N){
+   const delta=desired-q;
+   q+=clamp(delta,-1.7,1.7);
+  }else if(lastHitter==='ai'&&by>N){
+   const delta=bx-PW/2-q;
+   q+=clamp(delta,-1.55,1.55);
+  }
+  q=clamp(q,L,R-PW);
+
+  const oldX=bx,oldY=by,oldZ=z;
+  bx+=vx;
+  by+=vy;
+  z+=vz;
+  vz-=0.14;
+
+  if(bx< L+5){bx=L+5;vx=Math.abs(vx)}
+  if(bx>R-5){bx=R-5;vx=-Math.abs(vx)}
+
+  if((oldY<N&&by>=N)||(oldY>N&&by<=N)){
+   if(z<17){
+    point(lastHitter==='player'?'ai':'player');
+   }
+  }
+
+  if(phase==='playing'&&z<=0){
+   z=0;
+   if(lastHitter==='player'&&by<N){
+    if(oldY<N&&by>=T+40){
+     vz=2.3;
+    }else if(by<T+40){
+     point('ai');
+    }
+   }else if(lastHitter==='ai'&&by>N){
+    if(oldY>N&&by<=B-40){
+     vz=2.3;
+    }else if(by>B-40){
+     point('player');
+    }
+   }else if(lastHitter==='player'&&by>N){
+    if(by>=B-35){
+     if(bx>=p-5&&bx<=p+PW+5&&oldY<B-35){
+      hitPaddle('player');
+     }else if(oldY<B-35){
+      point('ai');
+     }
+    }
+   }else if(lastHitter==='ai'&&by<N){
+    if(by<=T+35){
+     if(bx>=q-5&&bx<=q+PW+5&&oldY>T+35){
+      hitPaddle('ai');
+     }else if(oldY>T+35){
+      point('player');
+     }
+    }
+   }
+  }
+
+  if(by<T+8||by>B-8){
+   if(lastHitter==='player'&&by<T+8)point('ai');
+   if(lastHitter==='ai'&&by>B-8)point('player');
+  }
+ }
+ draw();
+ requestAnimationFrame(update);
+}
+
+function draw(){
+ x.fillStyle='#080d12';
+ x.fillRect(0,0,W,H);
+
+ x.fillStyle='#145e48';
+ x.fillRect(L,T,R-L,B-T);
+
+ x.strokeStyle='#f2f5f4';
+ x.lineWidth=2;
+ x.strokeRect(L,T,R-L,B-T);
+
+ x.strokeStyle='#dce8e2';
+ x.lineWidth=1;
+ x.beginPath();
+ x.moveTo(L,N);x.lineTo(R,N);
+ x.moveTo(W/2,T);x.lineTo(W/2,N);
+ x.moveTo(W/2,N);x.lineTo(W/2,B);
+ x.stroke();
+
+ x.fillStyle='#0a1114';
+ x.fillRect(L,N-6,R-L,12);
+ x.fillStyle='#dce5e3';
+ x.fillRect(L,N-6,R-L,2);
+ x.fillRect(L,N+4,R-L,2);
+
+ x.fillStyle='#00e5ff';
+ x.fillRect(q,T+9,PW,PH);
+ x.fillStyle='#ffb347';
+ x.fillRect(p,B-9-PH,PW,PH);
+
+ x.fillStyle='#0008';
+ x.beginPath();
+ x.ellipse(bx,by,6,3,0,0,Math.PI*2);
+ x.fill();
+
+ x.fillStyle='#fff';
+ x.beginPath();
+ x.arc(bx,by-z,5,0,Math.PI*2);
+ x.fill();
+
+ x.textAlign='center';
+ x.fillStyle='#fff';
+ x.font='bold 20px monospace';
+ x.fillText(score+' : '+aiScore,W/2,N+31);
+
+ if(phase!=='playing'){
+  x.fillStyle='#07120fdd';
+  x.fillRect(49,N+52,252,48);
+  x.strokeStyle='#6e9285';
+  x.strokeRect(49,N+52,252,48);
+  x.font='bold 13px monospace';
+  x.fillStyle='#fff';
+  x.fillText(message,W/2,N+72);
+  x.font='11px monospace';
+  x.fillStyle='#c4d4cd';
+  x.fillText('PRESS SPACE',W/2,N+89);
+ }
+}
+
+draw();
+requestAnimationFrame(update);
+</script>
+</body>
 </html>
