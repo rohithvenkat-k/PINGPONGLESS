@@ -1,55 +1,21 @@
-<html>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Ping Pong Less</title>
-<style>*{box-sizing:border-box}body{color:#fff;background:#171322;flex-direction:column;justify-content:center;align-items:center;height:100dvh;margin:0;font:18px Times New Roman,serif;display:flex;overflow:hidden}canvas{touch-action:none;border-block:3px solid #fff;width:100vw;height:min(72vh,650px);display:block}p{letter-spacing:1px;margin:10px;font-size:21px}button{color:#10152b;cursor:pointer;background:#5af;border:2px solid #fff;padding:10px 24px;font:700 18px Times New Roman,serif}</style>
-<canvas id="c"></canvas>
-<p id="t">YOU 0 - 0 CPU</p>
-<button id="b">START / SERVE</button>
-<script>
-const c=document.querySelector('#c'),x=c.getContext('2d'),t=document.querySelector('#t'),b=document.querySelector('#b');
-let W=0,H=0,P=90,py=0,ay=0,bx=0,by=0,dx=0,dy=0,ps=0,as=0,speed=4.8,playing=false,dir=1,last=0,keys={},trail=[];
-function resize(){let r=c.getBoundingClientRect();W=c.width=Math.round(r.width);H=c.height=Math.round(r.height);P=Math.max(55,Math.min(100,H*.17));py=Math.min(py,H-P);ay=Math.min(ay,H-P);if(!bx){bx=W/2;by=H/2;py=ay=(H-P)/2}}
-addEventListener('resize',resize);resize();
-function reset(d){bx=W/2;by=H/2;dx=dy=0;speed=4.8;playing=false;dir=d;trail=[]}
-function serve(){if(!playing){playing=true;speed=4.8;dx=dir*speed;dy=(Math.random()-.5)*3.5;trail=[]}}
-function player(y){py=Math.max(0,Math.min(H-P,y-P/2))}
-function pointer(e){let r=c.getBoundingClientRect();player((e.clientY-r.top)*H/r.height)}
-c.addEventListener('pointermove',pointer);
-c.addEventListener('pointerdown',e=>{pointer(e);if(!playing)serve()});
-b.onclick=serve;
-addEventListener('keydown',e=>{keys[e.key]=true;if(e.code==='Space'){serve();e.preventDefault()}if(e.key.startsWith('Arrow'))e.preventDefault()});
-addEventListener('keyup',e=>keys[e.key]=false);
-function flower(a,bx,by,s){
-x.fillStyle='#ff8fc9';x.fillRect(bx-s,by-s,s,s);x.fillRect(bx,by-s,s,s);x.fillRect(bx-2*s,by,s,s);x.fillRect(bx,by,s,s);x.fillRect(bx-s,by+s,s,s);
-x.fillStyle='#ffd93d';x.fillRect(bx-s,by,s,s)
-}
-function draw(tm){
-let dt=Math.min((tm-last)/16.67||1,2);last=tm;
-if(keys.ArrowUp||keys.w||keys.W)py-=7*dt;
-if(keys.ArrowDown||keys.s||keys.S)py+=7*dt;
-py=Math.max(0,Math.min(H-P,py));
-x.fillStyle='#278447';x.fillRect(0,0,W,H);
-x.fillStyle='#319653';for(let i=0;i<14;i++)for(let j=0;j<7;j++)if((i+j)%2===0)x.fillRect(i*W/14,j*H/7,W/14,H/7);
-x.strokeStyle='#fff';x.lineWidth=3;x.strokeRect(2,2,W-4,H-4);x.setLineDash([12,12]);x.beginPath();x.moveTo(W/2,0);x.lineTo(W/2,H);x.stroke();x.setLineDash([]);
-for(let i=0;i<Math.max(5,Math.floor(W/85));i++){let fx=(i*137+43)%W,fy=(i*197+65)%H;flower(0,fx,fy,4)}
-x.fillStyle='#43a5ff';x.shadowColor='#51baff';x.shadowBlur=12;x.fillRect(18,py,14,P);
-x.fillStyle='#b17aff';x.shadowColor='#bd78ff';x.fillRect(W-32,ay,14,P);x.shadowBlur=0;
-if(playing){
-speed=Math.min(9,speed+.0015*dt);
-let m=Math.hypot(dx,dy)||1;dx=dx/m*speed;dy=dy/m*speed;bx+=dx*dt;by+=dy*dt;
-if(by<7){by=7;dy=Math.abs(dy)}if(by>H-7){by=H-7;dy=-Math.abs(dy)}
-let target=by-P/2+(Math.random()-.5)*H*.4;ay+=Math.max(-3*dt,Math.min(3*dt,target-ay));ay=Math.max(0,Math.min(H-P,ay));
-if(dx<0&&bx<=39&&bx>=18&&by>=py-7&&by<=py+P+7){bx=39;dx=Math.abs(dx);dy+=(by-py-P/2)*.035;speed=Math.min(8,speed+.18)}
-if(dx>0&&bx>=W-39&&bx<=W-18&&by>=ay-7&&by<=ay+P+7){bx=W-39;dx=-Math.abs(dx);dy+=(by-ay-P/2)*.025;speed=Math.min(8,speed+.18)}
-if(bx<-10){as++;reset(1)}if(bx>W+10){ps++;reset(-1)}
-}
-if(playing){trail.push({x:bx,y:by});if(trail.length>Math.round(speed*3))trail.shift()}else trail=[];
-for(let i=0;i<trail.length;i++){let p=trail[i],a=(i+1)/trail.length;x.globalAlpha=a*.65;x.fillStyle=dx>0?'#9df5ff':'#ffb5ff';x.beginPath();x.arc(p.x,p.y,2+a*5,0,Math.PI*2);x.fill()}
-x.globalAlpha=1;x.fillStyle='#fff';x.shadowColor=dx>0?'#51baff':'#bd78ff';x.shadowBlur=playing?12:0;x.beginPath();x.arc(bx,by,7,0,Math.PI*2);x.fill();x.shadowBlur=0;
-x.fillStyle='#fff';x.textAlign='center';x.font='bold 25px "Times New Roman"';x.shadowColor='#111';x.shadowBlur=4;x.fillText(ps+'  :  '+as,W/2,32);x.shadowBlur=0;
-t.textContent='YOU '+ps+'  -  '+as+' CPU'+(playing?'':' | SPACE TO SERVE');
-requestAnimationFrame(draw)
-}   
-draw(0);
-</script>
-</html>
+
+<html><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Ping Pong Less</title><style>*{box-sizing:border-box}body{color:#fff;background:#171322;place-content:center;height:100dvh;margin:0;font:18px Times New Roman;display:grid;overflow:hidden}canvas{touch-action:none;border:3px solid #fff;width:100vw;height:70vh}p{text-align:center}button{background:#5af;padding:9px;font:700 18px Times New Roman}</style><canvas id=c></canvas><p id=t>YOU 0 - 0 CPU</p><button id=b>START / SERVE</button><script>
+let g=c.getContext('2d'),W,H,P,y,a,x,z,dx=0,dy=0,v=4.8,s=0,q=0,go=0,d=1,k={},tr=[];
+function size(){W=c.width=c.clientWidth;H=c.height=c.clientHeight;P=H*.17;y=y||H/2;a=a||H/2;x=x||W/2;z=z||H/2}size();onresize=size;
+function reset(n){x=W/2;z=H/2;dx=dy=0;v=4.8;go=0;d=n}
+function serve(){go||(go=1,dx=d*v,dy=(Math.random()-.5)*3)}
+function pos(e){let r=c.getBoundingClientRect();y=Math.max(0,Math.min(H-P,(e.clientY-r.top)*H/r.height-P/2))}
+c.onpointermove=pos;c.onpointerdown=e=>{pos(e);serve()};b.onclick=serve;
+onkeydown=e=>{k[e.key]=1;if(e.code=='Space'){serve();e.preventDefault()}};onkeyup=e=>k[e.key]=0;
+function f(a,b){g.fillStyle='#f8c';for(let[u,w]of[[-1,-1],[0,-1],[-2,0],[0,0],[-1,1]])g.fillRect(a+u*4,b+w*4,4,4);g.fillStyle='#fd4';g.fillRect(a-4,b,4,4)}
+function draw(tm){let dt=Math.min((tm-(draw.l||tm))/16.7||1,2);draw.l=tm;if(k.ArrowUp||k.w)y-=7*dt;if(k.ArrowDown||k.s)y+=7*dt;y=Math.max(0,Math.min(H-P,y));
+g.fillStyle='#278447';g.fillRect(0,0,W,H);g.fillStyle='#319653';for(let i=0;i<14;i++)for(let j=0;j<7;j++)if((i+j)%2==0)g.fillRect(i*W/14,j*H/7,W/14,H/7);
+g.strokeStyle='white';g.lineWidth=3;g.strokeRect(1,1,W-2,H-2);g.setLineDash([12,12]);g.beginPath();g.moveTo(W/2,0);g.lineTo(W/2,H);g.stroke();g.setLineDash([]);
+for(let i=0;i<Math.min(12,W/85);i++)f(i*137%W,i*197%H);
+g.fillStyle='#43a5ff';g.fillRect(15,y,14,P);g.fillStyle='#b17aff';g.fillRect(W-29,a,14,P);
+if(go){v=Math.min(9,v+.001*dt);let m=Math.hypot(dx,dy)||1;dx=dx/m*v;dy=dy/m*v;x+=dx*dt;z+=dy*dt;if(z<7||z>H-7)dy=-dy;z=Math.max(7,Math.min(H-7,z));a=Math.max(0,Math.min(H-P,a+Math.max(-3*dt,Math.min(3*dt,z-P/2-a))));
+if(dx<0&&x<36&&x>15&&z>y-7&&z<y+P+7){x=36;dx=-dx;dy+=(z-y-P/2)*.035;v=Math.min(9,v+.18)}if(dx>0&&x>W-36&&x<W-15&&z>a-7&&z<a+P+7){x=W-36;dx=-dx;dy+=(z-a-P/2)*.025;v=Math.min(9,v+.18)}if(x< -8){q++;reset(1)}if(x>W+8){s++;reset(-1)}}
+if(go){tr.push([x,z]);if(tr.length>v*3)tr.shift()}else tr=[];
+tr.forEach((p,i)=>{g.globalAlpha=(i+1)/tr.length*.6;g.fillStyle='#9df';g.beginPath();g.arc(p[0],p[1],2+4*(i+1)/tr.length,0,7);g.fill()});g.globalAlpha=1;
+g.fillStyle='white';g.beginPath();g.arc(x,z,7,0,7);g.fill();g.textAlign='center';g.font='bold 24px "Times New Roman"';g.fillText(s+' : '+q,W/2,30);t.textContent='YOU '+s+' - '+q+' CPU';requestAnimationFrame(draw)}draw(0);
+</script></html>
