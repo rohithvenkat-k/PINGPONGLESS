@@ -1,0 +1,57 @@
+<html>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Ping Pong Less</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#171322;color:#fff;font:18px "Times New Roman",serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;overflow:hidden}canvas{display:block;width:100vw;height:min(72vh,650px);border-block:3px solid #fff;touch-action:none}p{margin:10px;font-size:21px;letter-spacing:1px}button{background:#55aaff;color:#10152b;border:2px solid #fff;padding:10px 24px;font:bold 18px "Times New Roman",serif;cursor:pointer}
+</style>
+<canvas id="c"></canvas>
+<p id="t">YOU 0 - 0 CPU</p>
+<button id="b">START / SERVE</button>
+<script>
+const c=document.querySelector('#c'),x=c.getContext('2d'),t=document.querySelector('#t'),b=document.querySelector('#b');
+let W=0,H=0,P=90,py=0,ay=0,bx=0,by=0,dx=0,dy=0,ps=0,as=0,speed=4.8,playing=false,dir=1,last=0,keys={},trail=[];
+function resize(){let r=c.getBoundingClientRect();W=c.width=Math.round(r.width);H=c.height=Math.round(r.height);P=Math.max(55,Math.min(100,H*.17));py=Math.min(py,H-P);ay=Math.min(ay,H-P);if(!bx){bx=W/2;by=H/2;py=ay=(H-P)/2}}
+addEventListener('resize',resize);resize();
+function reset(d){bx=W/2;by=H/2;dx=dy=0;speed=4.8;playing=false;dir=d;trail=[]}
+function serve(){if(!playing){playing=true;speed=4.8;dx=dir*speed;dy=(Math.random()-.5)*3.5;trail=[]}}
+function player(y){py=Math.max(0,Math.min(H-P,y-P/2))}
+function pointer(e){let r=c.getBoundingClientRect();player((e.clientY-r.top)*H/r.height)}
+c.addEventListener('pointermove',pointer);
+c.addEventListener('pointerdown',e=>{pointer(e);if(!playing)serve()});
+b.onclick=serve;
+addEventListener('keydown',e=>{keys[e.key]=true;if(e.code==='Space'){serve();e.preventDefault()}if(e.key.startsWith('Arrow'))e.preventDefault()});
+addEventListener('keyup',e=>keys[e.key]=false);
+function flower(a,bx,by,s){
+x.fillStyle='#ff8fc9';x.fillRect(bx-s,by-s,s,s);x.fillRect(bx,by-s,s,s);x.fillRect(bx-2*s,by,s,s);x.fillRect(bx,by,s,s);x.fillRect(bx-s,by+s,s,s);
+x.fillStyle='#ffd93d';x.fillRect(bx-s,by,s,s)
+}
+function draw(tm){
+let dt=Math.min((tm-last)/16.67||1,2);last=tm;
+if(keys.ArrowUp||keys.w||keys.W)py-=7*dt;
+if(keys.ArrowDown||keys.s||keys.S)py+=7*dt;
+py=Math.max(0,Math.min(H-P,py));
+x.fillStyle='#278447';x.fillRect(0,0,W,H);
+x.fillStyle='#319653';for(let i=0;i<14;i++)for(let j=0;j<7;j++)if((i+j)%2===0)x.fillRect(i*W/14,j*H/7,W/14,H/7);
+x.strokeStyle='#fff';x.lineWidth=3;x.strokeRect(2,2,W-4,H-4);x.setLineDash([12,12]);x.beginPath();x.moveTo(W/2,0);x.lineTo(W/2,H);x.stroke();x.setLineDash([]);
+for(let i=0;i<Math.max(5,Math.floor(W/85));i++){let fx=(i*137+43)%W,fy=(i*197+65)%H;flower(0,fx,fy,4)}
+x.fillStyle='#43a5ff';x.shadowColor='#51baff';x.shadowBlur=12;x.fillRect(18,py,14,P);
+x.fillStyle='#b17aff';x.shadowColor='#bd78ff';x.fillRect(W-32,ay,14,P);x.shadowBlur=0;
+if(playing){
+speed=Math.min(9,speed+.0015*dt);
+let m=Math.hypot(dx,dy)||1;dx=dx/m*speed;dy=dy/m*speed;bx+=dx*dt;by+=dy*dt;
+if(by<7){by=7;dy=Math.abs(dy)}if(by>H-7){by=H-7;dy=-Math.abs(dy)}
+let target=by-P/2+(Math.random()-.5)*H*.4;ay+=Math.max(-3*dt,Math.min(3*dt,target-ay));ay=Math.max(0,Math.min(H-P,ay));
+if(dx<0&&bx<=39&&bx>=18&&by>=py-7&&by<=py+P+7){bx=39;dx=Math.abs(dx);dy+=(by-py-P/2)*.035;speed=Math.min(8,speed+.18)}
+if(dx>0&&bx>=W-39&&bx<=W-18&&by>=ay-7&&by<=ay+P+7){bx=W-39;dx=-Math.abs(dx);dy+=(by-ay-P/2)*.025;speed=Math.min(8,speed+.18)}
+if(bx<-10){as++;reset(1)}if(bx>W+10){ps++;reset(-1)}
+}
+if(playing){trail.push({x:bx,y:by});if(trail.length>Math.round(speed*3))trail.shift()}else trail=[];
+for(let i=0;i<trail.length;i++){let p=trail[i],a=(i+1)/trail.length;x.globalAlpha=a*.65;x.fillStyle=dx>0?'#9df5ff':'#ffb5ff';x.beginPath();x.arc(p.x,p.y,2+a*5,0,Math.PI*2);x.fill()}
+x.globalAlpha=1;x.fillStyle='#fff';x.shadowColor=dx>0?'#51baff':'#bd78ff';x.shadowBlur=playing?12:0;x.beginPath();x.arc(bx,by,7,0,Math.PI*2);x.fill();x.shadowBlur=0;
+x.fillStyle='#fff';x.textAlign='center';x.font='bold 25px "Times New Roman"';x.shadowColor='#111';x.shadowBlur=4;x.fillText(ps+'  :  '+as,W/2,32);x.shadowBlur=0;
+t.textContent='YOU '+ps+'  -  '+as+' CPU'+(playing?'':' | SPACE TO SERVE');
+requestAnimationFrame(draw)
+}   
+draw(0);
+</script>
+</html>
